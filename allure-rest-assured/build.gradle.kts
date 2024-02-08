@@ -4,6 +4,8 @@ val restAssuredVersion = "5.3.1"
 
 dependencies {
     api(project(":allure-attachments"))
+    implementation(project(":allure-java-commons"))
+    implementation("com.fasterxml.jackson.core:jackson-databind")
     implementation("io.rest-assured:rest-assured:$restAssuredVersion")
     testImplementation("com.github.tomakehurst:wiremock")
     testImplementation("org.assertj:assertj-core")

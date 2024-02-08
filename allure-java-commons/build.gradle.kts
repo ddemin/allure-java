@@ -6,6 +6,7 @@ description = "Allure Java Commons"
 
 dependencies {
     api("org.slf4j:slf4j-api")
+    api("io.swagger.parser.v3:swagger-parser-v3")
     api(project(":allure-model"))
     compileOnly("org.aspectj:aspectjrt")
     internal("com.fasterxml.jackson.core:jackson-databind")
