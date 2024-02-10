@@ -42,6 +42,7 @@ import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.net.URI;
@@ -143,12 +144,14 @@ public class AllureAraRestAssured implements OrderedFilter {
 
         final MediaType mediaType = new MediaType();
         mediaType.setExample(responseBodyExample);
-        apiResponse.setContent(
-                new Content().addMediaType(
-                        restAssuredResponse.getContentType(),
-                        mediaType
-                )
-        );
+        if (StringUtils.isNoneBlank(restAssuredResponse.getContentType())) {
+            apiResponse.setContent(
+                    new Content().addMediaType(
+                            restAssuredResponse.getContentType(),
+                            mediaType
+                    )
+            );
+        }
 
         final ApiResponses apiResponses = new ApiResponses();
         apiResponses.addApiResponse(
@@ -235,14 +238,18 @@ public class AllureAraRestAssured implements OrderedFilter {
             } else if (requestSpec.getMultiPartParams() != null && !requestSpec.getMultiPartParams().isEmpty()) {
                 enrichWithMultiPartSpecs(requestSpec, openApiOperation);
             } else {
-                openApiOperation.setRequestBody(
-                        new RequestBody().content(
-                                new Content().addMediaType(
-                                        requestSpec.getContentType(),
-                                        new MediaType()
-                                )
-                        )
-                );
+
+                final String contentTypeHeader = requestSpec.getHeaders().getValue("Content-Type");
+                if (StringUtils.isNoneBlank(contentTypeHeader)) {
+                    openApiOperation.setRequestBody(
+                            new RequestBody().content(
+                                    new Content().addMediaType(
+                                            requestSpec.getContentType(),
+                                            new MediaType()
+                                    )
+                            )
+                    );
+                }
             }
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -284,22 +291,21 @@ public class AllureAraRestAssured implements OrderedFilter {
                         partExample.description(multipart.getFileName());
                     } else {
                         partSchema = new StringSchema();
-                    }
-
-                    if (multipart.getContent() != null) {
-                        try {
-                            partExample.setValue(
-                                    objectWriter.canSerialize(multipart.getContent().getClass())
-                                            ? Base64.getEncoder().encode(
-                                                    objectWriter.writeValueAsBytes(multipart.getContent())
-                                            )
-                                            : String.valueOf(multipart.getContent()).getBytes(UTF_8)
-                            );
-                            partSchema.setExample(partExample);
-                        } catch (JsonProcessingException e) {
-                            throw new RuntimeException(e);
+                        if (multipart.getContent() != null) {
+                            try {
+                                partSchema.setExample(
+                                        objectWriter.canSerialize(multipart.getContent().getClass())
+                                        ? Base64.getEncoder().encode(
+                                        objectWriter.writeValueAsBytes(multipart.getContent())
+                                )
+                                        : String.valueOf(multipart.getContent()).getBytes(UTF_8)
+                                );
+                            } catch (JsonProcessingException e) {
+                                throw new RuntimeException(e);
+                            }
                         }
                     }
+
                     partsSchema.addProperty(
                             multipart.getControlName(),
                             partSchema

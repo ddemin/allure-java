@@ -22,8 +22,8 @@ public class AllureAraRestAssuredTest {
     @Test
     void testAraPostJson() throws IOException {
         RestAssured.replaceFiltersWith(new AllureAraRestAssured());
-        given()
 
+        given()
                 .baseUri("https://reqbin.com")
                 .basePath("/echo/post/json")
                 .body(
@@ -44,14 +44,10 @@ public class AllureAraRestAssuredTest {
     @Test
     void testAraPostMultipart() throws IOException {
         RestAssured.replaceFiltersWith(new AllureAraRestAssured());
-        MultiPartSpecificationImpl multiPartSpecification = new MultiPartSpecificationImpl();
-        multiPartSpecification.setControlName("part3");
-        multiPartSpecification.setFileName("some fike");
-        multiPartSpecification.setMimeType("application/octet-stream");
-        multiPartSpecification.setHeaders(Maps.of("Some-Header", "test"));
-        multiPartSpecification.setContent("test123".getBytes(StandardCharsets.UTF_8));
+
         File tempFile = Files.newTemporaryFile();
         FileUtils.writeLines(tempFile, Collections.singletonList("Hello world!"));
+
         given()
                 .baseUri("https://reqbin.com")
                 .basePath("/echo/post/json")
