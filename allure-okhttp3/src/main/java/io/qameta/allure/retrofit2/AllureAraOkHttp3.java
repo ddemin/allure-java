@@ -83,8 +83,7 @@ public class AllureAraOkHttp3 implements Interceptor {
                 final OpenAPI openAPI = new OpenAPI()
                         .addServersItem(new Server().url(request.url().host()))
                         .path(path, pathItem);
-                attacher.attachOpenApi("OpenAPI: " + attachmentName, openAPI);
-
+                attacher.attachOpenApi(UUID.randomUUID().toString(), openAPI);
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }

@@ -84,7 +84,6 @@ public class AllureAraRestAssured implements OrderedFilter {
             return restAssuredResponse;
         } catch (Throwable tr) {
             reactionDto = new ExceptionReactionDto(
-                    tr.getClass().getTypeName(),
                     tr.getMessage(),
                     Base64.getEncoder().encodeToString(
                             ExceptionUtils.getStackTrace(tr).getBytes(UTF_8)
