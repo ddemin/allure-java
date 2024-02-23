@@ -13,7 +13,7 @@
  *  See the License for the specific language governing permissions and
  *  limitations under the License.
  */
-package io.qameta.allure.okhttp3;
+package io.qameta.allure.retrofit2;
 
 import io.qameta.allure.attachment.AttachmentData;
 import io.qameta.allure.attachment.AttachmentProcessor;

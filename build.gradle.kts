@@ -155,6 +155,7 @@ configure(libs) {
             dependency("com.puppycrawl.tools:checkstyle:9.3")
             dependency("com.squareup.retrofit2:retrofit:2.9.0")
             dependency("com.squareup.retrofit2:converter-jackson:2.9.0")
+            dependency("com.squareup.retrofit2:converter-scalars:2.9.0")
             dependency("commons-io:commons-io:2.11.0")
             dependency("io.github.benas:random-beans:3.9.0")
             dependency("io.github.glytching:junit-extensions:2.6.0")

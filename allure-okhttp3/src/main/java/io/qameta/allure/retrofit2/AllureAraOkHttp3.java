@@ -1,4 +1,4 @@
-package io.qameta.allure.okhttp3;
+package io.qameta.allure.retrofit2;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -11,14 +11,15 @@ import io.qameta.allure.ara.ExceptionReactionDto;
 import io.qameta.allure.ara.IReactionDto;
 import io.qameta.allure.ara.http.OpenApiActionDto;
 import io.qameta.allure.ara.http.OpenApiReactionDto;
-import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.examples.Example;
 import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.*;
+import io.swagger.v3.oas.models.parameters.HeaderParameter;
 import io.swagger.v3.oas.models.parameters.Parameter;
+import io.swagger.v3.oas.models.parameters.QueryParameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
@@ -28,6 +29,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
@@ -41,7 +43,6 @@ public class AllureAraOkHttp3 implements Interceptor {
     private static final String DEFAULT_CONTENT_TYPE = "text/plain";
     private static final String PREFIX_UNKNOWN_PART = "part-";
     private static final String DELIMITER_CONTENT_DISPOSITION = ";";
-    private static final String PREFIX_UNNAMED_PATH_PART = "segment-";
 
     private final AllureLifecycle lifecycle;
     private final ObjectWriter objectWriter;
@@ -75,12 +76,10 @@ public class AllureAraOkHttp3 implements Interceptor {
             throw new RuntimeException(tr);
         } finally {
             try {
+                final String realUri = StringUtils.substringBefore(request.url().redact(), "/...");
+                final String path = extractPath(request);
                 final ARAttachmentDto arAttachmentDto = new ARAttachmentDto(
-                        new OpenApiActionDto(
-                                StringUtils.substringBefore(request.url().redact(), "/..."),
-                                URLDecoder.decode(request.url().encodedPath(), UTF_8.name()),
-                                buildPathItem(request)
-                        ),
+                        new OpenApiActionDto(realUri, path, buildPathItem(request)),
                         reactionDto
                 );
                 attachAra(request, arAttachmentDto);
@@ -92,6 +91,14 @@ public class AllureAraOkHttp3 implements Interceptor {
         return null;
     }
 
+    protected String extractPath(Request request) throws UnsupportedEncodingException {
+        return URLDecoder.decode(request.url().encodedPath(), UTF_8.name());
+    }
+
+    protected void enrichByPathParameters(Request request, List<Parameter> parameters) {
+        // Unsupported for raw OkHttp3, please use something like Retrofit2
+    }
+
     private PathItem buildPathItem(final Request request) throws IOException {
         final Operation openApiOperation = new Operation();
 
@@ -99,42 +106,30 @@ public class AllureAraOkHttp3 implements Interceptor {
         request.headers().toMultimap().forEach(
                 (k, vs) -> {
                     parameters.add(
-                            new Parameter()
-                                    .in(ParameterIn.HEADER.toString())
+                            new HeaderParameter()
                                     .name(k)
-                                    .schema(new StringSchema())
                                     .example(vs.stream().findFirst().orElse(DEFAULT_VALUE_NOT_FOUND_HEADER))
                     );
                 }
         );
-
         request.url().queryParameterNames().forEach(
                 qname -> {
-                    parameters.add(
-                            new Parameter()
-                                    .in(ParameterIn.QUERY.toString())
-                                    .name(qname)
-                                    .schema(new StringSchema())
-                                    .example(request.url().queryParameterValues(qname).stream().findFirst())
-                    );
+                    try {
+                        parameters.add(
+                                new QueryParameter()
+                                        .name(qname)
+                                        .example(request.url().queryParameterValues(qname).stream().findFirst())
+                        );
+                    } catch (ClassCastException ex) {
+                        parameters.add(
+                                new QueryParameter()
+                                        .name(qname)
+                        );
+                    }
                 }
         );
 
-        // TODO Named parameters support ?
-        final AtomicInteger segmentNum = new AtomicInteger(0);
-        request.url().pathSegments().forEach(
-                psegment -> {
-                    parameters.add(
-                            new Parameter()
-                                    .in(ParameterIn.PATH.toString())
-                                    .name(PREFIX_UNNAMED_PATH_PART + segmentNum.incrementAndGet())
-                                    .schema(new StringSchema())
-                                    .example(psegment)
-                    );
-                }
-        );
-
-        // TODO Cookie support ?
+        enrichByPathParameters(request, parameters);
 
         openApiOperation.setParameters(parameters);
 
@@ -186,16 +181,24 @@ public class AllureAraOkHttp3 implements Interceptor {
 
         openApiOperation.setRequestBody(
                 new RequestBody().content(
+                        // TODO
                         new Content().addMediaType("application/x-www-form-urlencoded", mediaType)
                 )
         );
 
         final int formsCnt = body.size();
         for (int i = 0; i < formsCnt; i++) {
-            partsSchema.getProperties().put(
-                    body.name(i),
-                    new StringSchema()
-            );
+            try {
+                partsSchema.getProperties().put(
+                        body.name(i),
+                        new Schema().example(body.value(i))
+                );
+            } catch (ClassCastException ex) {
+                partsSchema.getProperties().put(
+                        body.name(i),
+                        new Schema()
+                );
+            }
         }
     }
 
@@ -210,6 +213,7 @@ public class AllureAraOkHttp3 implements Interceptor {
 
         openApiOperation.setRequestBody(
                 new RequestBody().content(
+                        // TODO
                         new Content().addMediaType("multipart/form-data", mediaType)
                 )
         );
@@ -218,19 +222,27 @@ public class AllureAraOkHttp3 implements Interceptor {
         body.parts().forEach(
                 part -> {
                     final Schema partSchema;
-                    final Example partExample = new Example();
-
                     final String disposition = part.headers() == null
                             ? ""
                             : part.headers().get("Content-Disposition");
                     final String type = StringUtils.substringBefore(disposition, DELIMITER_CONTENT_DISPOSITION);
-                    final String name = StringUtils.substringBetween(disposition, "name=", DELIMITER_CONTENT_DISPOSITION);
+                    String name = StringUtils.substringBefore(
+                            StringUtils.substringAfter(disposition, "name="),
+                            DELIMITER_CONTENT_DISPOSITION
+                    );
                     final String filename = StringUtils.substringBetween(disposition, "filename=", DELIMITER_CONTENT_DISPOSITION);
 
                     if (StringUtils.isNoneBlank(filename) || isBinaryResponseBody(part)) {
                         partSchema = new BinarySchema();
+                        name = "file";
+                        try {
+                            partSchema.setExample(String.valueOf(part.body().contentLength()));
+                        } catch (IOException e) {
+                            throw new RuntimeException(e);
+                        }
                     } else {
                         partSchema = new StringSchema();
+                        name = name.replace("\"", "");
                         try {
                             final String partRawBody = readRequestBody(part.body());
                             if (StringUtils.isNoneBlank(partRawBody)) {
