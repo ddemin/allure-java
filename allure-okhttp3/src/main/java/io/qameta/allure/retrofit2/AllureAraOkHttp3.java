@@ -1,16 +1,13 @@
 package io.qameta.allure.retrofit2;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.ObjectWriter;
-import io.qameta.allure.Allure;
-import io.qameta.allure.AllureLifecycle;
 import io.qameta.allure.ara.ARAttachmentDto;
 import io.qameta.allure.ara.ExceptionReactionDto;
-import io.qameta.allure.ara.IReactionDto;
-import io.qameta.allure.ara.http.OpenApiActionDto;
-import io.qameta.allure.ara.http.OpenApiReactionDto;
+import io.qameta.allure.ara.AbstractReactionDto;
+import io.qameta.allure.ara.openapi.OpenApiActionDto;
+import io.qameta.allure.ara.openapi.OpenApiARAAttacher;
+import io.qameta.allure.ara.openapi.OpenApiReactionDto;
+import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.Operation;
 import io.swagger.v3.oas.models.PathItem;
 import io.swagger.v3.oas.models.examples.Example;
@@ -23,6 +20,7 @@ import io.swagger.v3.oas.models.parameters.QueryParameter;
 import io.swagger.v3.oas.models.parameters.RequestBody;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.responses.ApiResponses;
+import io.swagger.v3.oas.models.servers.Server;
 import okhttp3.*;
 import okio.Buffer;
 import org.apache.commons.lang3.StringUtils;
@@ -44,21 +42,17 @@ public class AllureAraOkHttp3 implements Interceptor {
     private static final String PREFIX_UNKNOWN_PART = "part-";
     private static final String DELIMITER_CONTENT_DISPOSITION = ";";
 
-    private final AllureLifecycle lifecycle;
-    private final ObjectWriter objectWriter;
+    private final OpenApiARAAttacher attacher;
 
     public AllureAraOkHttp3() {
-        this.lifecycle = Allure.getLifecycle();
-        this.objectWriter = new ObjectMapper()
-                .setSerializationInclusion(JsonInclude.Include.NON_NULL)
-                .writerWithDefaultPrettyPrinter();
+        this.attacher = new OpenApiARAAttacher();
     }
 
     @Override
     public Response intercept(final Chain chain) throws IOException {
         final Request request = chain.request();
 
-        IReactionDto reactionDto = null;
+        AbstractReactionDto reactionDto = null;
         try {
             final Response response = chain.proceed(request);
             reactionDto = new OpenApiReactionDto(
@@ -67,7 +61,6 @@ public class AllureAraOkHttp3 implements Interceptor {
             );
         } catch (Throwable tr) {
             reactionDto = new ExceptionReactionDto(
-                    tr.getClass().getTypeName(),
                     tr.getMessage(),
                     Base64.getEncoder().encodeToString(
                             ExceptionUtils.getStackTrace(tr).getBytes(UTF_8)
@@ -78,11 +71,20 @@ public class AllureAraOkHttp3 implements Interceptor {
             try {
                 final String realUri = StringUtils.substringBefore(request.url().redact(), "/...");
                 final String path = extractPath(request);
-                final ARAttachmentDto arAttachmentDto = new ARAttachmentDto(
-                        new OpenApiActionDto(realUri, path, buildPathItem(request)),
+                final PathItem pathItem = buildPathItem(request);
+                final ARAttachmentDto<OpenApiActionDto> arAttachmentDto = new ARAttachmentDto<>(
+                        new OpenApiActionDto(realUri, path, pathItem),
                         reactionDto
                 );
-                attachAra(request, arAttachmentDto);
+
+                final String attachmentName = request.method() + " " + request.url();
+                attacher.attachAra(attachmentName, arAttachmentDto);
+
+                final OpenAPI openAPI = new OpenAPI()
+                        .addServersItem(new Server().url(request.url().host()))
+                        .path(path, pathItem);
+                attacher.attachOpenApi("OpenAPI: " + attachmentName, openAPI);
+
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -347,17 +349,6 @@ public class AllureAraOkHttp3 implements Interceptor {
         return headersAsMap;
     }
 
-    private void attachAra(
-            final Request request,
-            final ARAttachmentDto arAttachmentDto
-    ) throws JsonProcessingException {
-        lifecycle.addAttachment(
-                "Interaction - " + request.url(),
-                "application/json",
-                ".json",
-                objectWriter.writeValueAsString(arAttachmentDto).getBytes(UTF_8)
-        );
-    }
 
     private String readRequestBody(final okhttp3.RequestBody requestBody) throws IOException {
         final Buffer buffer = new Buffer();

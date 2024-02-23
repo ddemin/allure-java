@@ -23,9 +23,9 @@ import io.qameta.allure.Allure;
 import io.qameta.allure.AllureLifecycle;
 import io.qameta.allure.ara.ARAttachmentDto;
 import io.qameta.allure.ara.ExceptionReactionDto;
-import io.qameta.allure.ara.IReactionDto;
-import io.qameta.allure.ara.http.OpenApiActionDto;
-import io.qameta.allure.ara.http.OpenApiReactionDto;
+import io.qameta.allure.ara.AbstractReactionDto;
+import io.qameta.allure.ara.openapi.OpenApiActionDto;
+import io.qameta.allure.ara.openapi.OpenApiReactionDto;
 import io.restassured.filter.FilterContext;
 import io.restassured.filter.OrderedFilter;
 import io.restassured.http.Headers;
@@ -72,7 +72,7 @@ public class AllureAraRestAssured implements OrderedFilter {
     public Response filter(final FilterableRequestSpecification requestSpec,
                            final FilterableResponseSpecification responseSpec,
                            final FilterContext filterContext) {
-        IReactionDto reactionDto = null;
+        AbstractReactionDto reactionDto = null;
         try {
             final Response restAssuredResponse = filterContext.next(requestSpec, responseSpec);
 

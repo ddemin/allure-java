@@ -10,6 +10,7 @@ dependencies {
     api(project(":allure-model"))
     compileOnly("org.aspectj:aspectjrt")
     internal("com.fasterxml.jackson.core:jackson-databind")
+    internal("com.fasterxml.jackson.dataformat:jackson-dataformat-yaml")
     testImplementation("io.github.benas:random-beans")
     testImplementation("io.github.glytching:junit-extensions")
     testImplementation("org.apache.commons:commons-lang3")
@@ -45,6 +46,7 @@ tasks {
         relocate("com.fasterxml.jackson", "io.qameta.allure.internal.shadowed.jackson")
         dependencies {
             include(dependency("com.fasterxml.jackson.core::"))
+            include(dependency("com.fasterxml.jackson.dataformat::"))
         }
         exclude("**/module-info.class")
         exclude("META-INF/LICENSE*.md")

@@ -1,22 +1,25 @@
-package io.qameta.allure.ara.http;
+package io.qameta.allure.ara.openapi;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.qameta.allure.ara.IReactionDto;
+import io.qameta.allure.ara.AbstractReactionDto;
 import io.swagger.v3.oas.models.responses.ApiResponses;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import static io.qameta.allure.ara.IActionDto.TYPE_OPENAPI;
+import static io.qameta.allure.ara.AbstractActionDto.TYPE_OPENAPI;
 
 @JsonTypeName(TYPE_OPENAPI)
-public class OpenApiReactionDto implements IReactionDto {
+public class OpenApiReactionDto extends AbstractReactionDto {
+
     private int code;
     private ApiResponses response;
 
     public OpenApiReactionDto() {
+        super(TYPE_OPENAPI);
     }
 
     public OpenApiReactionDto(int code, ApiResponses response) {
+        super(TYPE_OPENAPI);
         this.code = code;
         this.response = response;
     }

@@ -1,24 +1,27 @@
-package io.qameta.allure.ara.http;
+package io.qameta.allure.ara.openapi;
 
 import com.fasterxml.jackson.annotation.JsonTypeName;
-import io.qameta.allure.ara.IActionDto;
+import io.qameta.allure.ara.AbstractActionDto;
 import io.swagger.v3.oas.models.PathItem;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 
-import static io.qameta.allure.ara.IActionDto.TYPE_OPENAPI;
+import static io.qameta.allure.ara.AbstractActionDto.TYPE_OPENAPI;
+
 
 @JsonTypeName(TYPE_OPENAPI)
-public class OpenApiActionDto implements IActionDto {
+public class OpenApiActionDto extends AbstractActionDto {
 
     private String uri;
     private String path;
     private PathItem pathItem;
 
     public OpenApiActionDto() {
+        super(TYPE_OPENAPI);
     }
 
     public OpenApiActionDto(String uri, String path, PathItem pathItem) {
+        super(TYPE_OPENAPI);
         this.uri = uri;
         this.path = path;
         this.pathItem = pathItem;

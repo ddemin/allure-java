@@ -4,34 +4,25 @@ import com.fasterxml.jackson.annotation.JsonTypeName;
 
 import java.util.Objects;
 
-import static io.qameta.allure.ara.IActionDto.TYPE_EXCEPTION;
+import static io.qameta.allure.ara.AbstractActionDto.TYPE_EXCEPTION;
 
 @JsonTypeName(TYPE_EXCEPTION)
-public class ExceptionReactionDto implements IReactionDto {
+public class ExceptionReactionDto extends AbstractReactionDto {
 
-    private String type;
     private String message;
     private String stacktrace64;
 
     public ExceptionReactionDto() {
+        super(TYPE_EXCEPTION);
     }
 
     public ExceptionReactionDto(
-            String type,
             String message,
             String stacktrace64
     ) {
-        this.type = type;
+        super(TYPE_EXCEPTION);
         this.message = message;
         this.stacktrace64 = stacktrace64;
-    }
-
-    public String getType() {
-        return type;
-    }
-
-    public void setType(String type) {
-        this.type = type;
     }
 
     public String getMessage() {
@@ -55,20 +46,18 @@ public class ExceptionReactionDto implements IReactionDto {
         if (obj == this) return true;
         if (obj == null || obj.getClass() != this.getClass()) return false;
         final ExceptionReactionDto that = (ExceptionReactionDto) obj;
-        return Objects.equals(this.type, that.type) &&
-                Objects.equals(this.message, that.message) &&
+        return Objects.equals(this.message, that.message) &&
                 Objects.equals(this.stacktrace64, that.stacktrace64);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(type, message, stacktrace64);
+        return Objects.hash(message, stacktrace64);
     }
 
     @Override
     public String toString() {
         return "ExceptionReactionDto[" +
-                "type=" + type + ", " +
                 "message=" + message + ", " +
                 "stacktrace64=" + stacktrace64 + ']';
     }

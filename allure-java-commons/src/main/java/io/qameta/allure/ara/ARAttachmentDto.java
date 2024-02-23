@@ -1,16 +1,20 @@
 package io.qameta.allure.ara;
 
-public class ARAttachmentDto {
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import io.qameta.allure.ara.openapi.OpenApiActionDto;
+
+public class ARAttachmentDto<T extends AbstractActionDto> {
 
     private final String type = "ARA";
 
-    private IActionDto action;
-    private IReactionDto reaction;
+    private T action;
+    private AbstractReactionDto reaction;
 
     public ARAttachmentDto() {
     }
 
-    public ARAttachmentDto(IActionDto action, IReactionDto reaction) {
+    public ARAttachmentDto(T action, AbstractReactionDto reaction) {
         this.action = action;
         this.reaction = reaction;
     }
@@ -19,19 +23,27 @@ public class ARAttachmentDto {
         return type;
     }
 
-    public IActionDto getAction() {
+    public T getAction() {
         return action;
     }
 
-    public void setAction(IActionDto action) {
+    @JsonTypeInfo(
+            use = JsonTypeInfo.Id.NAME,
+            include = JsonTypeInfo.As.EXISTING_PROPERTY
+    )
+    @JsonSubTypes({
+            @JsonSubTypes.Type(value = OpenApiActionDto.class),
+            @JsonSubTypes.Type(value = ExceptionActionDto.class),
+    })
+    public void setAction(T action) {
         this.action = action;
     }
 
-    public IReactionDto getReaction() {
+    public AbstractReactionDto getReaction() {
         return reaction;
     }
 
-    public void setReaction(IReactionDto reaction) {
+    public void setReaction(AbstractReactionDto reaction) {
         this.reaction = reaction;
     }
 }
