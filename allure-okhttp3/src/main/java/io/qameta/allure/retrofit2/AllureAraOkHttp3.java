@@ -41,6 +41,7 @@ public class AllureAraOkHttp3 implements Interceptor {
     private static final String DEFAULT_CONTENT_TYPE = "text/plain";
     private static final String PREFIX_UNKNOWN_PART = "part-";
     private static final String DELIMITER_CONTENT_DISPOSITION = ";";
+    private static final long MAX_READ_BYTES = 1_000_000L;
 
     private final OpenApiARAAttacher attacher;
 
@@ -154,7 +155,7 @@ public class AllureAraOkHttp3 implements Interceptor {
             final String contentTypeHeader = request.header("Content-Type");
             final String contentType = request.body() == null
                     ? contentTypeHeader
-                    : request.body().contentType().toString();
+                    : (request.body().contentType() == null ? null : request.body().contentType().toString());
             if (StringUtils.isNoneBlank(contentType)) {
                 openApiOperation.setRequestBody(
                         new io.swagger.v3.oas.models.parameters.RequestBody().content(
@@ -290,12 +291,11 @@ public class AllureAraOkHttp3 implements Interceptor {
         apiResponse.setHeaders(headersMap);
         apiResponse.setDescription(okHttpResponse.message());
 
-        final long contentLength = okHttpResponse.body() == null ? -1 : okHttpResponse.body().contentLength();
         final String contentType;
         final Example responseBodyExample;
         final String contentTypeHeader = okHttpResponse.header("Content-Type");
-        if (contentLength > 0) {
-            final ResponseBody responseBody = okHttpResponse.peekBody(contentLength);
+        if (okHttpResponse.body() != null) {
+            final ResponseBody responseBody = okHttpResponse.peekBody(MAX_READ_BYTES);
             responseBodyExample = new Example().value(
                     Base64.getEncoder().encode(
                             responseBody.string().getBytes(UTF_8)
