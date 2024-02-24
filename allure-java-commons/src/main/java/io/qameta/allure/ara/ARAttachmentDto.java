@@ -4,17 +4,17 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.qameta.allure.ara.openapi.OpenApiActionDto;
 
-public class ARAttachmentDto<T extends AbstractActionDto> {
+public class ARAttachmentDto<T extends AbstractActionDto, V extends AbstractReactionDto> {
 
     private final String type = "ARA";
 
     private T action;
-    private AbstractReactionDto reaction;
+    private V reaction;
 
     public ARAttachmentDto() {
     }
 
-    public ARAttachmentDto(T action, AbstractReactionDto reaction) {
+    public ARAttachmentDto(T action, V reaction) {
         this.action = action;
         this.reaction = reaction;
     }
@@ -39,11 +39,11 @@ public class ARAttachmentDto<T extends AbstractActionDto> {
         this.action = action;
     }
 
-    public AbstractReactionDto getReaction() {
+    public V getReaction() {
         return reaction;
     }
 
-    public void setReaction(AbstractReactionDto reaction) {
+    public void setReaction(V reaction) {
         this.reaction = reaction;
     }
 }

@@ -20,25 +20,27 @@ public class AllureAraOkHttp3Retrofit extends AllureAraOkHttp3 {
     protected String extractPath(Request request) {
         return Arrays.stream(request.tag(Invocation.class).method().getAnnotations())
                 .map(methodAnn -> {
+                            final String rawPath;
                             if (methodAnn.annotationType().equals(GET.class)) {
-                                return ((GET) methodAnn).value();
+                                rawPath = ((GET) methodAnn).value();
                             } else if (methodAnn.annotationType().equals(POST.class)) {
-                                return ((POST) methodAnn).value();
+                                rawPath = ((POST) methodAnn).value();
                             } else if (methodAnn.annotationType().equals(PUT.class)) {
-                                return ((PUT) methodAnn).value();
+                                rawPath = ((PUT) methodAnn).value();
                             } else if (methodAnn.annotationType().equals(PATCH.class)) {
-                                return ((PATCH) methodAnn).value();
+                                rawPath = ((PATCH) methodAnn).value();
                             } else if (methodAnn.annotationType().equals(DELETE.class)) {
-                                return ((DELETE) methodAnn).value();
+                                rawPath = ((DELETE) methodAnn).value();
                             } else if (methodAnn.annotationType().equals(HEAD.class)) {
-                                return ((HEAD) methodAnn).value();
+                                rawPath = ((HEAD) methodAnn).value();
                             } else if (methodAnn.annotationType().equals(OPTIONS.class)) {
-                                return ((OPTIONS) methodAnn).value();
+                                rawPath = ((OPTIONS) methodAnn).value();
                             } else if (methodAnn.annotationType().equals(HTTP.class)) {
-                                return ((HTTP) methodAnn).path();
+                                rawPath = ((HTTP) methodAnn).path();
                             } else {
                                 return null;
                             }
+                            return rawPath.startsWith("/") ? rawPath : ("/" + rawPath);
                         }
                 )
                 .filter(Objects::nonNull)

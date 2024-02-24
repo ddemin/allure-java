@@ -73,7 +73,7 @@ public class AllureAraOkHttp3 implements Interceptor {
                 final String realUri = StringUtils.substringBefore(request.url().redact(), "/...");
                 final String path = extractPath(request);
                 final PathItem pathItem = buildPathItem(request);
-                final ARAttachmentDto<OpenApiActionDto> arAttachmentDto = new ARAttachmentDto<>(
+                final ARAttachmentDto<OpenApiActionDto, AbstractReactionDto> arAttachmentDto = new ARAttachmentDto<>(
                         new OpenApiActionDto(realUri, path, pathItem),
                         reactionDto
                 );
@@ -81,10 +81,14 @@ public class AllureAraOkHttp3 implements Interceptor {
                 final String attachmentName = request.method() + " " + request.url();
                 attacher.attachAra(attachmentName, arAttachmentDto);
 
-                final OpenAPI openAPI = new OpenAPI()
-                        .addServersItem(new Server().url(request.url().host()))
-                        .path(path, pathItem);
-                attacher.attachOpenApi(UUID.randomUUID().toString(), openAPI);
+                if (OpenApiReactionDto.class.isAssignableFrom(reactionDto.getClass())) {
+                    pathItem.readOperations().get(0)
+                            .setResponses(((OpenApiReactionDto) reactionDto).getResponse());
+                    final OpenAPI openAPI = new OpenAPI()
+                            .addServersItem(new Server().url(request.url().host()))
+                            .path(path, pathItem);
+                    attacher.attachOpenApi(UUID.randomUUID().toString(), openAPI);
+                }
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
@@ -286,11 +290,12 @@ public class AllureAraOkHttp3 implements Interceptor {
         apiResponse.setHeaders(headersMap);
         apiResponse.setDescription(okHttpResponse.message());
 
-        final ResponseBody responseBody = okHttpResponse.body();
+        final long contentLength = okHttpResponse.body() == null ? -1 : okHttpResponse.body().contentLength();
         final String contentType;
         final Example responseBodyExample;
         final String contentTypeHeader = okHttpResponse.header("Content-Type");
-        if (responseBody != null) {
+        if (contentLength > 0) {
+            final ResponseBody responseBody = okHttpResponse.peekBody(contentLength);
             responseBodyExample = new Example().value(
                     Base64.getEncoder().encode(
                             responseBody.string().getBytes(UTF_8)

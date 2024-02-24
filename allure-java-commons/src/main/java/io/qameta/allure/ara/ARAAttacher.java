@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.qameta.allure.Allure;
 import io.qameta.allure.AllureLifecycle;
-import io.qameta.allure.ara.openapi.OpenApiActionDto;
 
 import static com.fasterxml.jackson.databind.MapperFeature.USE_WRAPPER_NAME_AS_PROPERTY_NAME;
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -38,7 +37,7 @@ public class ARAAttacher {
 
     public void attachAra(
             final String name,
-            final ARAttachmentDto<OpenApiActionDto> arAttachmentDto
+            final ARAttachmentDto<?, ?> arAttachmentDto
     ) throws JsonProcessingException {
         lifecycle.addAttachment(
                 name,
