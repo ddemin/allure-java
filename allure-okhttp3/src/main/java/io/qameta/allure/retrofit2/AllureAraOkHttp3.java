@@ -59,6 +59,7 @@ public class AllureAraOkHttp3 implements Interceptor {
                     response.code(),
                     buildApiResponses(response)
             );
+            return response;
         } catch (Throwable tr) {
             reactionDto = new ExceptionReactionDto(
                     tr.getMessage(),
@@ -87,9 +88,7 @@ public class AllureAraOkHttp3 implements Interceptor {
             } catch (JsonProcessingException e) {
                 throw new RuntimeException(e);
             }
-
         }
-        return null;
     }
 
     protected String extractPath(Request request) throws UnsupportedEncodingException {
